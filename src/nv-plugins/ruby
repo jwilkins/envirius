@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+RB_MIRROR="https://ftp.ruby-lang.org/pub/ruby/"
+
+# Output lists of versions
+plug_list_versions() {
+    echo $(curl -s "$RB_MIRROR" | grep "ruby-" |\
+      grep -E -o "[0-9]+\.[0-9]+(\.[0-9]+)?(-p[0-9]+)?(-rc[0-9]+)?" | \
+      sort -n | uniq )
+}
+
+# Return full url for tarball for download
+plug_url_for_download() {
+    local version=$1
+    echo "$RB_MIRROR/ruby-$version.tar.bz2"
+}
+
+plug_install_ruby_symlink() {
+    local env_name=$1
+    local env_name_full=$2
+    if [ ! -f "$env_name_full/bin/ruby" ]; then
+    (
+        cd "$env_name_full/bin"
+        # look for alternate names like ruby19
+        ln -s `find . -iname "ruby*"` ruby
+    )
+    fi
+}
+
+# plug_install_bundler() ?
+
+plug_install_gem() {
+  # ruby 1.9 and later includes rubygems
+  if [[ $version -lt 1.9 ]]; then
+    local env_name=$1
+    local env_name_full=$2
+    if [ ! -f "$env_name_full/bin/gem" ]; then
+    (
+        nv on --same-shell $env_name >/dev/null
+        local get_gem_url="https:///"
+        local get_gem=$(nv_download_file $get_gem_url "get-gem.rb")
+        python $get_pip >/dev/null
+    )
+    fi
+  fi
+}
+
+plug_post_install_actions() {
+    plug_install_ruby_symlink "$@"
+    plug_install_gem "$@"
+}
